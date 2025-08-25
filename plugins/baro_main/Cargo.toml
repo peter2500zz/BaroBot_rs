@@ -1,0 +1,12 @@
+[package]
+name = "baro_main"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+azalea-brigadier = "0.13.0"
+humantime = "2.2.0"
+kovi.workspace = true
+reqwest = { version = "0.12.23", features = ["json"] }
+serde = "1.0.219"
+serde_yaml = "0.9.34"
