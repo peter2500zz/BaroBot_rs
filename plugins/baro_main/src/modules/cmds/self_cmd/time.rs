@@ -1,16 +1,16 @@
 use std::sync::Arc;
 use azalea_brigadier::prelude::*;
-use kovi::tokio;
+use kovi::{event::RepliableEvent, tokio};
 
 use crate::modules::cmds::AppCtx;
 
 
-pub fn time(disp: &mut CommandDispatcher<AppCtx>) {
+pub fn time<T: RepliableEvent + Send + Sync>(disp: &mut CommandDispatcher<AppCtx<T>>) {
     disp.register(
         literal("self")
         .then(
             literal("time")
-                .executes(|ctx: &CommandContext<AppCtx>| {
+                .executes(|ctx: &CommandContext<AppCtx<T>>| {
                     let event = Arc::clone(&ctx.source.event);
                     let state = Arc::clone(&ctx.source.state);
 

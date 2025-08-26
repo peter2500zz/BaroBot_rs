@@ -2,8 +2,7 @@ mod room_info;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use kovi::{
-    tokio::sync::Mutex, 
-    Message, PluginBuilder as plugin
+    log::info, tokio::sync::Mutex, Message, PluginBuilder as plugin
 };
 
 use crate::{config::{Config, LiveConfig}, GlobalState};
@@ -52,7 +51,7 @@ pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
                             Some(s) => s,
                             None => {
                                 // ensure not send too much message at once
-                                println!("{} init with {}", room_id, room.live_status);
+                                info!("[Live reminder] room {} init with {}", room_id, room.live_status);
                                 state.live_state.insert(room_id, room.live_status);
                                 continue;
                             }
@@ -65,6 +64,8 @@ pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
                         match room.live_status {
                             // 下播
                             0 => {
+                                info!("[Live reminder] room {} now not at stream any more.", room_id);
+
                                 for (group_id, room_ids) in &live_reminder.reminder {
                                     let room_id = room_id.parse::<i64>().unwrap_or_default();
                                     if room_ids.contains(&room_id) {
@@ -76,6 +77,7 @@ pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
                             // 直播
                             1 => {
                                 let mut msg = Message::new();
+                                info!("[Live reminder] room {} now streaming.", room_id);
 
                                 msg.push_text(format!("{} {}\n", room.uname, if room.live_status == 1 { "正在直播" } else { "不在直播" }));
                                 msg.push_text(format!("{}\n", room.area_name));

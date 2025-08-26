@@ -1,3 +1,4 @@
+use kovi::log::info;
 use serde::{Deserialize};
 use serde_yaml;
 use std::fs;
@@ -26,6 +27,7 @@ pub struct AutoShutUpConfig {
 
 impl Config {
     pub fn from_yaml(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        info!("[Config] Loading config from {}", path);
         let config_content = fs::read_to_string(path)?;
 
         let config: Self = serde_yaml::from_str(&config_content)?;

@@ -2,8 +2,7 @@ mod modules;
 mod config;
 
 use kovi::{
-    tokio::sync::Mutex, 
-    PluginBuilder as plugin, RuntimeBot
+    log::info, tokio::sync::Mutex, PluginBuilder as plugin, RuntimeBot
 };
 
 use std::{
@@ -17,6 +16,14 @@ use crate::{
     modules::*,
 };
 
+
+const INTRO: &str = r#"[Baro] Printing intro...
+    ____  ___    ____  ____              
+   / __ )/   |  / __ \/ __ \   __________
+  / __  / /| | / /_/ / / / /  / ___/ ___/
+ / /_/ / ___ |/ _, _/ /_/ /  / /  (__  ) 
+/_____/_/  |_/_/ |_|\____/  /_/  /____/  
+"#;
 
 struct GlobalState {
     start_time: Instant,
@@ -58,6 +65,8 @@ impl PluginRegister {
 
 #[kovi::plugin]
 async fn main() {
+    info!("[Baro] Registering plugins...");
+
     let config = Config::from_yaml("config.yaml").unwrap_or_default();
     let state = Arc::new(Mutex::new(GlobalState::new()));
 
@@ -68,5 +77,7 @@ async fn main() {
     .register(live_reminder)
     .register(auto_shut_up)
     ;
+
+    info!("{INTRO}");
 }
 

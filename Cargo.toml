@@ -1,15 +1,15 @@
 [package]
 name = "baro_rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 baro_main = { version = "0.1.0", path = "plugins/baro_main" }
-kovi = "0.12.4"
+kovi = { git = "https://github.com/peter2500zz/Kovi.git", branch = "develop" }
 kovi-plugin-cmd = "0.3.0"
 
 [workspace]
 members = [ "plugins/baro_main" ]
 
 [workspace.dependencies]
-kovi = "0.12.4"
+kovi = { git = "https://github.com/peter2500zz/Kovi.git", branch = "develop" }
