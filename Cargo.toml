@@ -5,11 +5,11 @@ edition = "2024"
 
 [dependencies]
 baro_main = { version = "0.1.0", path = "plugins/baro_main" }
-kovi = { git = "https://github.com/peter2500zz/Kovi.git", branch = "develop" }
+kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
 kovi-plugin-cmd = "0.3.0"
 
 [workspace]
 members = [ "plugins/baro_main" ]
 
 [workspace.dependencies]
-kovi = { git = "https://github.com/peter2500zz/Kovi.git", branch = "develop" }
+kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }

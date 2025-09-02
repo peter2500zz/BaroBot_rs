@@ -4,6 +4,7 @@ mod config;
 use kovi::{
     log::info, tokio::sync::Mutex, PluginBuilder as plugin, RuntimeBot
 };
+use reqwest::Client;
 
 use std::{
     time::Instant,
@@ -26,9 +27,13 @@ const INTRO: &str = r#"[Baro] Printing intro...
 "#;
 
 struct GlobalState {
-    start_time: Instant,
-    live_state: HashMap::<String, i32>,
     bot: Arc<RuntimeBot>,
+    start_time: Instant,
+
+    live_state: HashMap::<String, i32>,
+
+    tt_client: Option<Client>,
+    // schedule_cache: None,
 }
 
 impl GlobalState {
@@ -37,6 +42,7 @@ impl GlobalState {
             start_time: Instant::now(),
             live_state: HashMap::new(),
             bot: plugin::get_runtime_bot(),
+            tt_client: None
         }
     }
 }

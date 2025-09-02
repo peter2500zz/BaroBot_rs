@@ -7,8 +7,9 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Deserialize, Default, Clone)]
 pub struct Config {
-    pub live: LiveConfig,
-    pub auto_shutup: Vec<AutoShutUpConfig>
+    pub live: Option<LiveConfig>,
+    pub auto_shutup: Option<Vec<AutoShutUpConfig>>,
+    pub timetable: Option<TimeTableConfig>
 }
 
 #[derive(Deserialize, Default, Clone)]
@@ -24,6 +25,12 @@ pub struct AutoShutUpConfig {
     pub end: String,
 }
 
+#[derive(Deserialize, Default, Clone)]
+pub struct TimeTableConfig {
+    pub receiver: i64,
+    pub username: String,
+    pub password: String,
+}
 
 impl Config {
     pub fn from_yaml(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
