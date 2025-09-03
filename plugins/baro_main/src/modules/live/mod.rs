@@ -2,10 +2,10 @@ mod room_info;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use kovi::{
-    log::info, tokio::sync::Mutex, Message, PluginBuilder as plugin
+    log::info, Message, PluginBuilder as plugin
 };
 
-use crate::{config::{Config, LiveConfig}, GlobalState};
+use crate::{config::LiveConfig, GlobalState};
 
 // use std::sync::Arc;
 
@@ -36,8 +36,8 @@ impl LiveReminder {
     }
 }
 
-pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
-    if let Some(config) = config.live {
+pub fn live_reminder(state: Arc<GlobalState>) {
+    if let Some(config) = state.config.live.clone() {
         plugin::cron(&config.cron.clone(), {
             move || {
                 let state = Arc::clone(&state);
@@ -45,15 +45,15 @@ pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
 
                 async move {
                     if let Ok(response) = live_reminder.live_status().await {
-                        let mut state = state.lock().await;
+                        let mut live_state = state.live_state.lock().await;
 
                         for (room_id, room) in response.data.by_room_ids {
-                            let last_status = match state.live_state.get(&room_id).cloned() {
+                            let last_status = match live_state.get(&room_id).cloned() {
                                 Some(s) => s,
                                 None => {
                                     // ensure not send too much message at once
                                     info!("[Live reminder] room {} init with {}", room_id, room.live_status);
-                                    state.live_state.insert(room_id, room.live_status);
+                                    live_state.insert(room_id, room.live_status);
                                     continue;
                                 }
                             };
@@ -99,7 +99,7 @@ pub fn live_reminder(config: Config, state: Arc<Mutex<GlobalState>>) {
                                 _ => unreachable!()
                             }
 
-                            state.live_state.insert(room_id, room.live_status);
+                            live_state.insert(room_id, room.live_status);
                         }
                     }
                 }

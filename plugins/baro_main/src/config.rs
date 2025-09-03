@@ -1,5 +1,5 @@
 use kovi::log::info;
-use serde::{Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::fs;
 use std::collections::{HashMap, HashSet};
@@ -25,7 +25,7 @@ pub struct AutoShutUpConfig {
     pub end: String,
 }
 
-#[derive(Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct TimeTableConfig {
     pub receiver: i64,
     pub username: String,

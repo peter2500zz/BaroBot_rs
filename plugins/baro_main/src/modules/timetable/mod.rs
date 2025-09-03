@@ -5,10 +5,11 @@ use rusqlite::OptionalExtension;
 use serde::{self, Deserialize, Serialize};
 
 use azalea_brigadier::prelude::*;
-use kovi::{event::RepliableEvent, tokio::{self, sync::Mutex}};
+use kovi::{event::RepliableEvent, tokio::{self, sync::Mutex}, PluginBuilder as plugin};
 use reqwest::{cookie, header::{HeaderMap, HeaderValue, USER_AGENT}, Client};
 
 use crate::{config::Config, modules::cmds::AppCtx, GlobalState};
+
 
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -110,6 +111,12 @@ where
     Ok(Weekday::from(s.chars().nth(1).unwrap_or_default().to_string()))
 }
 
+struct Class {
+    name: String,
+    location: String,
+    teacher: String,
+}
+
 pub fn cmd<T: RepliableEvent + Send + Sync>(disp: &mut CommandDispatcher<AppCtx<T>>) {
     disp.register(
         literal("tt")
@@ -131,41 +138,61 @@ pub fn cmd<T: RepliableEvent + Send + Sync>(disp: &mut CommandDispatcher<AppCtx<
     );
 }
 
-pub fn init(config: Config, state: Arc<Mutex<GlobalState>>) {
-    if let Some(config) = config.timetable {
-        let cookie = Arc::new(cookie::Jar::default());
-        let mut header = HeaderMap::new();
-        header.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0"));
+pub fn init(state: Arc<GlobalState>) {
+    if let Some(config) = state.config.timetable.clone() {
 
-        let mut form = HashMap::new();
-        form.insert("username", config.username);
-        form.insert("password", config.password);
-
-        let client = Client::builder()
-        .cookie_provider(Arc::clone(&cookie))
-        .default_headers(header)
-        .build().unwrap();
-
-
-        
         tokio::spawn(async move {
-            let sso_result = client
-            .post("https://sso.jsit.edu.cn/sso/login")
-            .form(&form)
-            .send().await;
+            let client = Arc::clone(&state.tt_client);
+            let result = get_schedule(client, &config).await;
 
-            let site_result = client.get("https://i.jsit.edu.cn/sso/login").send().await;
-            
-            if let Ok(_) = sso_result && let Ok(_) = site_result {
-                state.lock().await.tt_client = Some(client);
-            } else {
-                state.lock().await.bot.send_private_msg(config.receiver, "[TimeTable] 登录失败");
+            if let Ok(data) = result && let Ok(conn) = state.memory_db_pool.get() {
+                if let Err(_) = set_schedule(conn, data) {
+                    return;
+                }
+
+                let cron = [
+                    "0 50 7 * * *",
+                    "0 40 8 * * *",
+                    "0 40 9 * * *",
+                    "0 30 10 * * *",
+                    "0 0 13 * * *",
+                    "0 45 13 * * *",
+                    "0 35 14 * * *",
+                    "0 20 15 * * *",
+                    "0 30 17 * * *",
+                    "0 20 18 * * *",
+                    "0 10 19 * * *",
+                    "0 0 20 * * *",
+                ];
+
+                for (index, &cron) in cron.iter().enumerate() {
+                    plugin::cron(cron, {
+                        let state = Arc::clone(&state);
+                        move || {
+                            let state = Arc::clone(&state);
+
+                            async move {
+                                let bot = Arc::clone(&state.bot);
+
+                                let conn = match state.memory_db_pool.get() {
+                                    Ok(conn) => conn,
+                                    Err(e) => {
+                                        bot.send_private_msg(config.receiver, format!("Can not get conn: {}", e));
+                                        return;
+                                    }
+                                };
+
+                                
+                            }
+                        }
+                    }).unwrap();
+                }
             }
         });
     }
 }
 
-async fn get_schedule<T: Serialize + ?Sized>(client: Client, account: &T) -> Result<Vec<TTUnit>, reqwest::Error> {
+async fn get_schedule<T: Serialize + ?Sized>(client: Arc<Client>, account: &T) -> Result<Vec<TTUnit>, reqwest::Error> {
     client
     .post("https://sso.jsit.edu.cn/sso/login")
     .form(account)
@@ -185,119 +212,172 @@ async fn get_schedule<T: Serialize + ?Sized>(client: Client, account: &T) -> Res
     Ok(schedule.data.rows)
 }
 
-#[tokio::test]
-async fn g() {
-    let manager = SqliteConnectionManager::memory()
-    // 初始化：设置外键、内存日志、临时表存放在内存，等等
-    .with_init(|c| {
-        c.busy_timeout(Duration::from_secs(5))?; // 锁冲突时自动等待
-        c.execute_batch(
-            r#"
-            CREATE TABLE schedule (
-                week     INTEGER,
-                weekday  TEXT,
-                queue    INTEGER,
-                term    INTEGER,
-                name     TEXT
-            )
-            ;"#,
-        )
-    });
-
-    // 2) 构建“单连接池”，并让这条连接尽量不被回收
-    let pool: Pool<SqliteConnectionManager> = r2d2::Pool::builder()
-    .max_size(1)
-    .min_idle(Some(1))
-    .max_lifetime(None)
-    .idle_timeout(None)
-    .build(manager).unwrap();
-
-    let mut header = HeaderMap::new();
-    header.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0"));
-
-    let mut form = HashMap::new();
-    form.insert("username", "");
-    form.insert("password", "");
-
-    let client = Client::builder()
-    .redirect(reqwest::redirect::Policy::limited(20))
-    .cookie_store(true)
-
-    .default_headers(header)
-    .build().unwrap();
-
-    match get_schedule(client, &form).await {
-        Ok(r) => {
-            let conn = pool.get().unwrap();
-            for unit in r {
-                for week in unit.weeks.to_vec() {
-                    for queue in unit.queues.to_vec() {
-                        let r = conn.execute(
-                            r#"
-                            INSERT INTO schedule (
-                                week, 
-                                weekday, 
-                                queue,
-                                term,
-                                name
-                            ) VALUES (
-                                ?1, 
-                                ?2, 
-                                ?3,
-                                ?4,
-                                ?5
-                            )
-                            ;"#, 
-                            [
-                                &week.to_string(),
-                                &unit.weekday.to_string(),
-                                &queue.to_string(),
-                                &unit.term.to_string(),
-                                &unit.name
-                            ]
-                        );
-
-                        if let Err(e) = r {
-                            println!("{e}");
-                        }
-                    }
-                }
-            }
-
-            
-            
-            for i in 1..=8 {
-                let stmt = conn.query_row(
+fn set_schedule(conn: r2d2::PooledConnection<SqliteConnectionManager>, data: Vec<TTUnit>) -> Result<(), rusqlite::Error> {
+    for unit in data {
+        for week in unit.weeks.to_vec() {
+            for queue in unit.queues.to_vec() {
+                conn.execute(
                     r#"
-                    SELECT name
-                    FROM schedule
-                    WHERE week = ?1
-                    AND weekday = ?2
-                    AND term = ?3
-                    AND queue = ?4
-                    LIMIT 1
-                    ;"#,
+                    INSERT INTO schedule (
+                        week, 
+                        weekday, 
+                        queue,
+                        term,
+                        name
+                    ) VALUES (
+                        ?1, 
+                        ?2, 
+                        ?3,
+                        ?4,
+                        ?5
+                    )
+                    ;"#, 
                     [
-                        "1",
-                        &Weekday::Tue.to_string(),
-                        "2025",
-                        &i.to_string()
-                    ],
-                    |row| row.get::<_, String>(0),
-                ).optional().unwrap();
-
-                match stmt {
-                    Some(name) => println!("{}", name),
-                    None => println!("[无]")
-                }
-
+                        &week.to_string(),
+                        &unit.weekday.to_string(),
+                        &queue.to_string(),
+                        &unit.term.to_string(),
+                        &unit.name
+                    ]
+                )?;
             }
-
-
-        },
-        Err(e) => {
-            panic!("{e}")
         }
-        
     }
+
+    Ok(())
 }
+
+fn get_class(conn: r2d2::PooledConnection<SqliteConnectionManager>, week: i32, weekday: Weekday, term: i32, queue: i32) -> Option<String> {
+    conn.query_row(
+        r#"
+        SELECT name
+        FROM schedule
+        WHERE week = ?1
+        AND weekday = ?2
+        AND term = ?3
+        AND queue = ?4
+        LIMIT 1
+        ;"#,
+        [
+            week.to_string(),
+            weekday.to_string(),
+            term.to_string(),
+            queue.to_string()
+        ],
+        |row| row.get::<_, String>(0),
+    ).optional().unwrap()
+}
+
+// #[tokio::test]
+// async fn g() {
+//     let manager = SqliteConnectionManager::memory()
+
+//     .with_init(|conn| {
+//         conn.busy_timeout(Duration::from_secs(5))?; // 锁冲突时自动等待
+//         conn.execute_batch(
+//             r#"
+//             CREATE TABLE schedule (
+//                 week     INTEGER,
+//                 weekday  TEXT,
+//                 queue    INTEGER,
+//                 term    INTEGER,
+//                 name     TEXT
+//             )
+//             ;"#,
+//         )
+//     });
+
+//     let pool = r2d2::Pool::builder()
+//     .max_size(1)
+//     .min_idle(Some(1))
+//     .max_lifetime(None)
+//     .idle_timeout(None)
+//     .build(manager).unwrap();
+
+//     let mut header = HeaderMap::new();
+//     header.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0"));
+
+//     let mut form = HashMap::new();
+
+//     let client = Client::builder()
+//     .redirect(reqwest::redirect::Policy::limited(20))
+//     .cookie_store(true)
+
+//     .default_headers(header)
+//     .build().unwrap();
+
+//     match get_schedule(client, &form).await {
+//         Ok(r) => {
+//             let conn = pool.get().unwrap();
+//             for unit in r {
+//                 for week in unit.weeks.to_vec() {
+//                     for queue in unit.queues.to_vec() {
+//                         let r = conn.execute(
+//                             r#"
+//                             INSERT INTO schedule (
+//                                 week, 
+//                                 weekday, 
+//                                 queue,
+//                                 term,
+//                                 name
+//                             ) VALUES (
+//                                 ?1, 
+//                                 ?2, 
+//                                 ?3,
+//                                 ?4,
+//                                 ?5
+//                             )
+//                             ;"#, 
+//                             [
+//                                 &week.to_string(),
+//                                 &unit.weekday.to_string(),
+//                                 &queue.to_string(),
+//                                 &unit.term.to_string(),
+//                                 &unit.name
+//                             ]
+//                         );
+
+//                         if let Err(e) = r {
+//                             println!("{e}");
+//                         }
+//                     }
+//                 }
+//             }
+
+            
+            
+//             for i in 1..=8 {
+//                 let stmt = conn.query_row(
+//                     r#"
+//                     SELECT name
+//                     FROM schedule
+//                     WHERE week = ?1
+//                     AND weekday = ?2
+//                     AND term = ?3
+//                     AND queue = ?4
+//                     LIMIT 1
+//                     ;"#,
+//                     [
+//                         "1",
+//                         &Weekday::Tue.to_string(),
+//                         "2025",
+//                         &i.to_string()
+//                     ],
+//                     |row| row.get::<_, String>(0),
+//                 ).optional().unwrap();
+
+//                 match stmt {
+//                     Some(name) => println!("{}", name),
+//                     None => println!("[无]")
+//                 }
+
+//             }
+
+
+//         },
+//         Err(e) => {
+//             panic!("{e}")
+//         }
+        
+//     }
+// }

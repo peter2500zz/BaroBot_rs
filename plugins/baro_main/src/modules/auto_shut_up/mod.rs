@@ -1,5 +1,5 @@
 use kovi::{
-    log::info, tokio::sync::Mutex, PluginBuilder as plugin
+    log::info, PluginBuilder as plugin
 };
 
 use std::{
@@ -8,12 +8,11 @@ use std::{
 
 use crate::{
     GlobalState,
-    config::Config,
 };
 
 
-pub fn auto_shut_up(config: Config, state: Arc<Mutex<GlobalState>>) {
-    if let Some(config) = config.auto_shutup {
+pub fn auto_shut_up(state: Arc<GlobalState>) {
+    if let Some(config) = state.config.auto_shutup.clone() {
         for cfg in config {
             info!("[Auto shut up] {}: {} -> {}", cfg.group_id, cfg.start, cfg.end);
             let state_for_start = Arc::clone(&state);
@@ -22,7 +21,6 @@ pub fn auto_shut_up(config: Config, state: Arc<Mutex<GlobalState>>) {
                     let state = Arc::clone(&state_for_start);
 
                     async move {
-                        let state = state.lock().await;
                         let bot = Arc::clone(&state.bot);
 
                         info!("[Auto shut up] {}: SHUT UP!", cfg.group_id);
@@ -37,7 +35,6 @@ pub fn auto_shut_up(config: Config, state: Arc<Mutex<GlobalState>>) {
                     let state = Arc::clone(&state_for_end);
 
                     async move {
-                        let state = state.lock().await;
                         let bot = Arc::clone(&state.bot);
 
                         info!("[Auto shut up] {}: NO SHUT UP.", cfg.group_id);

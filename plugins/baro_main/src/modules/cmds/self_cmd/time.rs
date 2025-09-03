@@ -15,8 +15,6 @@ pub fn time<T: RepliableEvent + Send + Sync>(disp: &mut CommandDispatcher<AppCtx
                     let state = Arc::clone(&ctx.source.state);
 
                     tokio::spawn(async move {
-                        let state= state.lock().await;
-
                         event.reply(format!("已运行 {}", humantime::format_duration(state.start_time.elapsed())));
                     });
 

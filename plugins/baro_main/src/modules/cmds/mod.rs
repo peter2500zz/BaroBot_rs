@@ -11,7 +11,7 @@ use azalea_brigadier::prelude::*;
 use kovi::{event::AdminMsgEvent, tokio::sync::Mutex};
 use kovi::PluginBuilder as plugin;
 
-use crate::{config::Config, GlobalState};
+use crate::GlobalState;
 
 
 const COMMAND_PREFIX: &str = "/";
@@ -23,7 +23,7 @@ where
     E: RepliableEvent + Send + Sync + 'static,
 {
     event: Arc<E>,
-    state: Arc<Mutex<GlobalState>>,
+    state: Arc<GlobalState>,
 }
 
 struct PluginBuilder<E>
@@ -53,7 +53,7 @@ where
     }
 }
 
-pub fn admin_cmd(_: Config, state: Arc<Mutex<GlobalState>>) {
+pub fn admin_cmd(state: Arc<GlobalState>) {
     let mut plg = PluginBuilder::new();
 
     plg

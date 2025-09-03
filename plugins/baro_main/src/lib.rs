@@ -4,7 +4,9 @@ mod config;
 use kovi::{
     log::info, tokio::sync::Mutex, PluginBuilder as plugin, RuntimeBot
 };
-use reqwest::Client;
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
+use reqwest::{header::{HeaderMap, HeaderValue, USER_AGENT}, Client};
 
 use std::{
     time::Instant,
@@ -27,56 +29,98 @@ const INTRO: &str = r#"[Baro] Printing intro...
 "#;
 
 struct GlobalState {
+    config: Config,
+
     bot: Arc<RuntimeBot>,
     start_time: Instant,
+    memory_db_pool: Pool<SqliteConnectionManager>,
 
-    live_state: HashMap::<String, i32>,
+    live_state: Mutex<HashMap::<String, i32>>,
 
-    tt_client: Option<Client>,
+    tt_client: Arc<Client>,
     // schedule_cache: None,
 }
 
 impl GlobalState {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
+        let mut header = HeaderMap::new();
+        header.insert(USER_AGENT, HeaderValue::from_static("Mozilla/5.0"));
+
+
+        let client = Client::builder()
+        .redirect(reqwest::redirect::Policy::limited(20))
+        .cookie_store(true)
+
+        .default_headers(header)
+        .build().unwrap();
+
+        let manager = SqliteConnectionManager::memory()
+
+        .with_init(|conn| {
+            conn.execute_batch(
+                r#"
+                CREATE TABLE schedule (
+                    week     INTEGER,
+                    weekday  TEXT,
+                    queue    INTEGER,
+                    term    INTEGER,
+                    name     TEXT
+                )
+                ;"#,
+            )
+        });
+
+        let pool = r2d2::Pool::builder()
+        .max_size(1)
+        .min_idle(Some(1))
+        .max_lifetime(None)
+        .idle_timeout(None)
+        .build(manager).unwrap();
+
         Self {
-            start_time: Instant::now(),
-            live_state: HashMap::new(),
+            config,
+
             bot: plugin::get_runtime_bot(),
-            tt_client: None
+            start_time: Instant::now(),
+            memory_db_pool: pool,
+
+            live_state: Mutex::new(HashMap::new()),
+
+            tt_client: Arc::new(client)
         }
     }
 }
 
-
 struct PluginRegister {
-    state: Arc<Mutex<GlobalState>>,
-    config: Config,
+    state: Arc<GlobalState>,
 }
 
 impl PluginRegister {
-    fn new(config: Config, state: Arc<Mutex<GlobalState>>) -> Self {
+    fn new(state: Arc<GlobalState>) -> Self {
         Self {
-            config,
             state,
         }
     }
 
-    fn register(&self, reg_func: fn(config: Config, state: Arc<Mutex<GlobalState>>)) -> &Self {
-        reg_func(self.config.clone(), Arc::clone(&self.state));
+    fn register(&self, reg_func: fn(state: Arc<GlobalState>)) -> &Self {
+        reg_func(Arc::clone(&self.state));
 
         self
     }
 }
 
+pub fn d() {
+    use azalea_brigadier::prelude::*;
+}
 
 #[kovi::plugin]
 async fn main() {
     info!("[Baro] Registering plugins...");
 
     let config = Config::from_yaml("config.yaml").unwrap_or_default();
-    let state = Arc::new(Mutex::new(GlobalState::new()));
+    let state = Arc::new(GlobalState::new(config));
 
-    let plg = PluginRegister::new(config, state);
+    let plg = PluginRegister::new(state);
 
     plg
     .register(admin_cmd)
