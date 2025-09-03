@@ -109,10 +109,6 @@ impl PluginRegister {
     }
 }
 
-pub fn d() {
-    use azalea_brigadier::prelude::*;
-}
-
 #[kovi::plugin]
 async fn main() {
     info!("[Baro] Registering plugins...");

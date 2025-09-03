@@ -6,6 +6,8 @@ fn main() {
 
     build_bot!(
         // kovi_plugin_cmd,
-        baro_main
+        // baro_main,
+        brigadier,
+        ping,
     ).run();
 }

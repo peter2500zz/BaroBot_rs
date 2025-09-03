@@ -1,5 +1,7 @@
-use azalea_brigadier::prelude::*;
+use std::sync::Arc;
 
+use azalea_brigadier::prelude::*;
+use kovi::event::AdminMsgEvent;
 
 type DispHandler = fn(&mut CommandDispatcher<AppCtx>);
 
@@ -12,7 +14,16 @@ impl Register {
         Self { func }
     }
 }
-pub struct AppCtx;
+
+pub struct AppCtx {
+    pub event: Arc<AdminMsgEvent>
+}
+
+impl AppCtx {
+    pub fn new(event: &Arc<AdminMsgEvent>) -> Self {
+        Self { event: Arc::clone(event) }
+    }
+}
 
 
 
