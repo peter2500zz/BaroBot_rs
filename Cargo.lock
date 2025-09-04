@@ -158,6 +158,7 @@ dependencies = [
  "kovi-plugin-cmd",
  "live_reminder",
  "ping",
+ "self_info",
 ]
 
 [[package]]
@@ -1647,6 +1648,15 @@ checksum = "49db231d56a190491cb4aeda9527f1ad45345af50b0851622a7adb8c03b01c32"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "self_info"
+version = "0.1.0"
+dependencies = [
+ "brigadier",
+ "humantime",
+ "kovi 0.12.5 (git+https://github.com/ThriceCola/Kovi.git?branch=nightly)",
 ]
 
 [[package]]

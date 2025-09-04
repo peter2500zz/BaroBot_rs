@@ -7,6 +7,7 @@ fn main() {
         brigadier,
         ping,
         live_reminder,
+        self_info,
     ).run();
 }
 

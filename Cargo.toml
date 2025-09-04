@@ -12,9 +12,10 @@ kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
 kovi-plugin-cmd = "0.3.0"
 live_reminder = { version = "0.1.0", path = "plugins/live_reminder" }
 ping = { version = "0.1.0", path = "plugins/ping" }
+self_info = { version = "0.1.0", path = "plugins/self_info" }
 
 [workspace]
-members = [ "plugins/baro_main" , "plugins/brigadier", "plugins/config", "plugins/live_reminder", "plugins/ping"]
+members = [ "plugins/baro_main", "plugins/brigadier", "plugins/config", "plugins/live_reminder", "plugins/ping", "plugins/self_info" ]
 
 [workspace.dependencies]
 kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
