@@ -3,11 +3,17 @@ use kovi::build_bot;
 fn main() {
     build_bot!(
         // kovi_plugin_cmd,
-        // baro_main,
+
+        // 配置文件
+        config,
+
+        // 基于Brigadier的插件
         brigadier,
-        ping,
-        live_reminder,
-        self_info,
+            ping,
+            live_reminder,
+            self_info,
+
+        auto_shutup,
     ).run();
 }
 

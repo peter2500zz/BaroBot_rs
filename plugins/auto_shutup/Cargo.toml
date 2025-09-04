@@ -1,0 +1,8 @@
+[package]
+name = "auto_shutup"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kovi.workspace = true
+config = { path = "../config" }
