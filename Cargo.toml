@@ -6,13 +6,15 @@ edition = "2024"
 [dependencies]
 baro_main = { version = "0.1.0", path = "plugins/baro_main" }
 brigadier = { version = "0.1.0", path = "plugins/brigadier" }
+config = { version = "0.1.0", path = "plugins/config" }
 inventory = "0.3.21"
 kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
 kovi-plugin-cmd = "0.3.0"
+live_reminder = { version = "0.1.0", path = "plugins/live_reminder" }
 ping = { version = "0.1.0", path = "plugins/ping" }
 
 [workspace]
-members = [ "plugins/baro_main" , "plugins/brigadier", "plugins/ping"]
+members = [ "plugins/baro_main" , "plugins/brigadier", "plugins/config", "plugins/live_reminder", "plugins/ping"]
 
 [workspace.dependencies]
 kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }

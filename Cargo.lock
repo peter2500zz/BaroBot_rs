@@ -152,9 +152,11 @@ version = "0.1.1"
 dependencies = [
  "baro_main",
  "brigadier",
+ "config",
  "inventory",
  "kovi 0.12.5 (git+https://github.com/ThriceCola/Kovi.git?branch=nightly)",
  "kovi-plugin-cmd",
+ "live_reminder",
  "ping",
 ]
 
@@ -235,6 +237,15 @@ name = "colorchoice"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
+
+[[package]]
+name = "config"
+version = "0.1.0"
+dependencies = [
+ "kovi 0.12.5 (git+https://github.com/ThriceCola/Kovi.git?branch=nightly)",
+ "serde",
+ "serde_yaml",
+]
 
 [[package]]
 name = "console"
@@ -1092,6 +1103,17 @@ name = "litrs"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5e54036fe321fd421e10d732f155734c4e4afd610dd556d9a82833ab3ee0bed"
+
+[[package]]
+name = "live_reminder"
+version = "0.1.0"
+dependencies = [
+ "brigadier",
+ "config",
+ "kovi 0.12.5 (git+https://github.com/ThriceCola/Kovi.git?branch=nightly)",
+ "reqwest",
+ "serde",
+]
 
 [[package]]
 name = "lock_api"

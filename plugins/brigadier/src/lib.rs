@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub use azalea_brigadier;
 pub use inventory;
 use azalea_brigadier::prelude::*;
-use kovi::PluginBuilder as plugin;
+use kovi::{log::info, PluginBuilder as plugin};
 
 use crate::register::{AppCtx, Register};
 
@@ -36,8 +36,9 @@ async fn main() {
         let disp = Arc::clone(&disp);
 
         async move {
-
             if let Some(command) = get_command(event.borrow_text().unwrap_or_default()) {
+                info!("[Brigadier] received a command: {}", command);
+
                 let ret = {
                     disp.execute(command, AppCtx::new(&event))
                 };
