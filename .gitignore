@@ -2,3 +2,4 @@
 config.yaml
 kovi.conf.toml
 kovi.plugin.toml
+build.sh

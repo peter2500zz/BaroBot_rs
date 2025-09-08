@@ -14,34 +14,34 @@ async fn main() {
     inventory::submit! {
         Register::new(|disp: &mut CommandDispatcher<AppCtx>| {
 
+            // self 命令集
             disp.register(
                 literal("self")
                 .then(
                     literal("time")
                         .executes(cmds::time)
                 )
+                .executes(cmds::info)
+            );
+
+            // send 命令集
+            disp.register(
+                literal("send")
                 .then(
-                    literal("info")
-                    .executes(cmds::info)
-                )
-                .then(
-                    literal("send")
+                    literal("group")
                     .then(
-                        literal("group")
-                        .then(
-                            argument("group_id", long())
-                            .then(
-                                argument("msg", greedy_string())
-                                .executes(cmds::send::group)
-                            )
-                        )
-                    )
-                    .then(
-                        argument("user_id", long())
+                        argument("group_id", long())
                         .then(
                             argument("msg", greedy_string())
-                            .executes(cmds::send::private)
+                            .executes(cmds::send::group)
                         )
+                    )
+                )
+                .then(
+                    argument("user_id", long())
+                    .then(
+                        argument("msg", greedy_string())
+                        .executes(cmds::send::private)
                     )
                 )
             );
