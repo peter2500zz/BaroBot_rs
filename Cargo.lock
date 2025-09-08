@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "baro_rs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "auto_shutup",
  "baro_main",
@@ -167,7 +167,7 @@ dependencies = [
  "kovi-plugin-cmd",
  "live_reminder",
  "ping",
- "self_info",
+ "self_cmds",
 ]
 
 [[package]]
@@ -1660,7 +1660,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "self_info"
+name = "self_cmds"
 version = "0.1.0"
 dependencies = [
  "brigadier",

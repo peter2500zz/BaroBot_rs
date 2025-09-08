@@ -11,7 +11,7 @@ fn main() {
         brigadier,
             ping,
             live_reminder,
-            self_info,
+            self_cmds,
 
         auto_shutup,
     ).run();
