@@ -1,14 +1,3 @@
-// use kovi::PluginBuilder as plugin;
-
-// #[kovi::plugin]
-// async fn main() {
-//     plugin::on_msg(|event| async move {
-//         if event.borrow_text() == Some("hi") {
-//             event.reply("hi")
-//         }
-//     });
-// }
-
 mod room_info;
 
 use std::sync::Arc;
@@ -24,20 +13,31 @@ use kovi::{
 };
 
 use brigadier::{azalea_brigadier::prelude::*, inventory, register::{AppCtx, Register}};
-use config::{
-    CONFIG,
-    LiveConfig
-};
+use config::load_config;
+use serde::Deserialize;
 
 use crate::room_info::get_live_status;
 
-pub struct LiveReminder {
-    pub reminder: HashMap<i64, HashSet<i64>>,
-    pub room_ids: HashSet<i64>
+
+#[derive(Deserialize, Default, Clone, Debug)]
+struct Config {
+    live_reminder: LiveConfig,
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+struct LiveConfig {
+    cron: String,
+    reminder: HashMap<i64, HashSet<i64>>
+}
+
+
+struct LiveReminder {
+    reminder: HashMap<i64, HashSet<i64>>,
+    room_ids: HashSet<i64>
 }
 
 impl LiveReminder {
-    pub fn new(live_config: LiveConfig) -> Self {
+    fn new(live_config: LiveConfig) -> Self {
         let mut rooms = HashSet::<i64>::new();
 
         for (_, room_ids) in &live_config.reminder {
@@ -67,17 +67,15 @@ async fn main() {
         })
     }
 
-    let config = Arc::clone(&CONFIG);
-
     let live_state: Arc<Mutex<HashMap::<String, i32>>> =  Arc::new(Mutex::new(HashMap::new()));
     let bot = plugin::get_runtime_bot();
 
-    if let Some(config) = config.live_reminder.clone() {
+    if let Some(config) = load_config::<Config>() {
         info!("[Live reminder] initializing rooms");
 
-        let live_reminder = Arc::new(LiveReminder::new(config.clone()));
+        let live_reminder = Arc::new(LiveReminder::new(config.live_reminder.clone()));
 
-        plugin::cron(&config.cron.clone(), {
+        plugin::cron(&config.live_reminder.cron.clone(), {
             move || {
                 let live_reminder = Arc::clone(&live_reminder);
                 let live_state = Arc::clone(&live_state);

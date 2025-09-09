@@ -1,15 +1,28 @@
 use std::sync::Arc;
 
-use config::CONFIG;
+use config::load_config;
 use kovi::{log::info, PluginBuilder as plugin};
+use serde::Deserialize;
+
+
+#[derive(Deserialize, Default, Clone, Debug)]
+struct Config {
+    auto_shutup: Vec<AutoShutUpConfig>,
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+struct AutoShutUpConfig {
+    group_id: i64,
+    start: String,
+    end: String,
+}
 
 #[kovi::plugin]
 async fn main() {
-    let config = Arc::clone(&CONFIG);
     let bot = plugin::get_runtime_bot();
 
-    if let Some(config) = config.auto_shutup.clone() {
-        for cfg in config {
+    if let Some(config) = load_config::<Config>() {
+        for cfg in config.auto_shutup {
             info!("[Auto shut up] {}: {} -> {}", cfg.group_id, cfg.start, cfg.end);
 
             let bot_for_start = Arc::clone(&bot);

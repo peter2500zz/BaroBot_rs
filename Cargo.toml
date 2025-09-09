@@ -10,6 +10,7 @@ config = { version = "0.1.0", path = "plugins/config" }
 inventory = "0.3.21"
 kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
 kovi-plugin-cmd = "0.3.0"
+limit_shutup = { version = "0.1.0", path = "plugins/limit_shutup" }
 live_reminder = { version = "0.1.0", path = "plugins/live_reminder" }
 ping = { version = "0.1.0", path = "plugins/ping" }
 repeat = { version = "0.1.0", path = "plugins/repeat" }
@@ -19,7 +20,7 @@ self_cmds = { version = "0.1.0", path = "plugins/self_cmds" }
 members = [ 
     "plugins/auto_shutup", 
     "plugins/brigadier", 
-    "plugins/config", 
+    "plugins/config", "plugins/limit_shutup", 
     "plugins/live_reminder", 
     "plugins/ping", "plugins/repeat", 
     "plugins/self_cmds" 

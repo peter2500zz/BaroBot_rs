@@ -1,13 +1,10 @@
 mod config;
 
 // use kovi::PluginBuilder as plugin;
-use std::sync::{Arc, LazyLock};
-
 pub use config::*;
 
-pub const CONFIG: LazyLock<Arc<Config>> = LazyLock::new(|| {
-    Arc::new(Config::from_yaml("config.yaml").unwrap_or_default())
-});
+pub const CONFIG_PATH: &str = "config.yaml";
+
 
 #[kovi::plugin]
 async fn main() {
