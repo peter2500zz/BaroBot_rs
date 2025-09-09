@@ -12,6 +12,7 @@ fn main() {
             ping,
             live_reminder,
             self_cmds,
+            repeat,
 
         auto_shutup,
     ).run();

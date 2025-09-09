@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 auto_shutup = { version = "0.1.0", path = "plugins/auto_shutup" }
-baro_main = { version = "0.1.0", path = "plugins/baro_main" }
 brigadier = { version = "0.1.0", path = "plugins/brigadier" }
 config = { version = "0.1.0", path = "plugins/config" }
 inventory = "0.3.21"
@@ -13,10 +12,18 @@ kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }
 kovi-plugin-cmd = "0.3.0"
 live_reminder = { version = "0.1.0", path = "plugins/live_reminder" }
 ping = { version = "0.1.0", path = "plugins/ping" }
+repeat = { version = "0.1.0", path = "plugins/repeat" }
 self_cmds = { version = "0.1.0", path = "plugins/self_cmds" }
 
 [workspace]
-members = [ "plugins/auto_shutup", "plugins/baro_main", "plugins/brigadier", "plugins/config", "plugins/live_reminder", "plugins/ping", "plugins/self_cmds" ]
+members = [ 
+    "plugins/auto_shutup", 
+    "plugins/brigadier", 
+    "plugins/config", 
+    "plugins/live_reminder", 
+    "plugins/ping", "plugins/repeat", 
+    "plugins/self_cmds" 
+]
 
 [workspace.dependencies]
 kovi = { git = "https://github.com/ThriceCola/Kovi.git", branch = "nightly" }

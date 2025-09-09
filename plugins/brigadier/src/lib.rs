@@ -58,7 +58,7 @@ async fn main() {
 
 /// 根据 `COMMAND_PREFIX` 判断是否是命令</br >
 /// 并提取出命令部分
-fn get_command(raw_msg: &str) -> Option<String> {
+pub fn get_command(raw_msg: &str) -> Option<String> {
     if raw_msg.starts_with(COMMAND_PREFIX) {
         Some(raw_msg.chars().skip(1).collect::<String>())
     } else {
