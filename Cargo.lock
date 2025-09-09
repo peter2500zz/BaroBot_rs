@@ -999,7 +999,9 @@ checksum = "6a82ae493e598baaea5209805c49bbf2ea7de956d50d7da0da1164f9c6d28543"
 name = "limit_shutup"
 version = "0.1.0"
 dependencies = [
+ "config",
  "kovi 0.12.5 (git+https://github.com/ThriceCola/Kovi.git?branch=nightly)",
+ "serde",
 ]
 
 [[package]]
