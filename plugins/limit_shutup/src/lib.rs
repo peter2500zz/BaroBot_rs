@@ -46,7 +46,7 @@ async fn main() {
                 if let Some(config_for_this_group) = config.get(&event.group_id) {
                     if event.human_text.chars().count() >= config_for_this_group.limit {
                         info!(
-                            "{}({}) in {} out of limit, banned for {} seconds", 
+                            "[Limit shutup] {}({}) in {} out of limit, banned for {} seconds", 
                             event.get_sender_nickname(),
                             event.user_id,
                             event.group_id,

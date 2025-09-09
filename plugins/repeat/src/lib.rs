@@ -1,6 +1,6 @@
 
 use std::{collections::HashMap, sync::{Arc, LazyLock}};
-use kovi::{tokio::{self, sync::Mutex}, Message, RuntimeBot};
+use kovi::{log::info, tokio::{self, sync::Mutex}, Message, RuntimeBot};
 
 use kovi::PluginBuilder as plugin;
 use brigadier::{azalea_brigadier::prelude::*, get_command, inventory, register::{AppCtx, Register}};
@@ -110,6 +110,8 @@ fn set_continuous(ctx: &CommandContext<AppCtx>) -> i32 {
 
         continuous.0 = is_continuous;
 
+        info!("[Repeat] Continuous repeat changed to {}", continuous.0);
+
         if continuous.0 {
             event.reply(format!("已开启连续复读"));
         } else {
@@ -141,6 +143,8 @@ fn change_limit(ctx: &CommandContext<AppCtx>) -> i32 {
         for (_, (_, count)) in ACTIVED_GROUP.lock().await.iter_mut() {
             *count = 0;
         }
+
+        info!("[Repeat] Repeat limit changed to {}", new_limit);
 
         event.reply(format!("复读阈值已更改为 {}", new_limit));
     });
@@ -198,6 +202,8 @@ fn cancel_repeat_at_this_group(ctx: &CommandContext<AppCtx>) -> i32 {
             if actived_group.contains_key(&group_id) {
                 actived_group.remove(&group_id);
 
+                info!("[Repeat] Stopped repeating at {}", group_id);
+
                 event.reply("已停止本群中的复读")
             } else {
                 
@@ -220,12 +226,17 @@ fn cancel_repeat_with_arg(ctx: &CommandContext<AppCtx>) -> i32 {
         let actived_group = Arc::clone(&ACTIVED_GROUP);
         let mut actived_group = actived_group.lock().await;
         
+        // 检查是否已经在这个群里复读
         if actived_group.contains_key(&group_id) {
             actived_group.remove(&group_id);
 
+            info!("[Repeat] Stopped repeating at {}", group_id);
+
+            // 检查目标群是不是本群
             if let Some(this_group_id) = event.group_id && this_group_id == group_id {
                 event.reply(format!("已停止本群中的复读"));
             } else {
+                // 看看能不能获得群名称
                 if let Some(group_name) = get_group_name(&bot, group_id).await {
                     event.reply(format!("已停止在 {}({}) 中的复读", group_name, group_id));
                 } else {
@@ -233,7 +244,6 @@ fn cancel_repeat_with_arg(ctx: &CommandContext<AppCtx>) -> i32 {
                 }
             }
         } else {
-            
             event.reply("并没有在本群中复读")
         }
     });
@@ -249,11 +259,14 @@ fn repeat_at_this_group(ctx: &CommandContext<AppCtx>) -> i32 {
             let actived_group = Arc::clone(&ACTIVED_GROUP);
             let mut actived_group = actived_group.lock().await;
 
+            // 检查是否已经在这个群里复读
             if actived_group.contains_key(&group_id) {
                 event.reply(format!("已经在本群中复读"));
             } else {
                 actived_group.insert(group_id, (String::new(), 0));
-                
+
+                info!("[Repeat] Starting repeat at {}", group_id);
+
                 event.reply(format!("开始在本群中复读"));
             }
         });
@@ -275,11 +288,14 @@ fn repeat_with_arg(ctx: &CommandContext<AppCtx>) -> i32 {
         let actived_group = Arc::clone(&ACTIVED_GROUP);
         let mut actived_group = actived_group.lock().await;
 
+        // 检查是否已经在这个群里复读
         if actived_group.contains_key(&group_id) {
 
+            // 检查目标群是不是本群
             if let Some(this_group_id) = event.group_id && this_group_id == group_id {
                 event.reply(format!("已经在本群中复读"));
             } else {
+                // 看看能不能获得群名称
                 if let Some(group_name) = get_group_name(&bot, group_id).await {
                     event.reply(format!("已经在 {}({}) 中复读", group_name, group_id));
                 } else {
@@ -288,10 +304,14 @@ fn repeat_with_arg(ctx: &CommandContext<AppCtx>) -> i32 {
             }
         } else {
             actived_group.insert(group_id, (String::new(), 0));
-            
+
+            info!("[Repeat] Starting repeat at {}", group_id);
+
+            // 检查目标群是不是本群
             if let Some(this_group_id) = event.group_id && this_group_id == group_id {
                 event.reply(format!("开始在本群中复读"));
             } else {
+                // 看看能不能获得群名称
                 if let Some(group_name) = get_group_name(&bot, group_id).await {
                     event.reply(format!("开始在 {}({}) 中复读", group_name, group_id));
                 } else {

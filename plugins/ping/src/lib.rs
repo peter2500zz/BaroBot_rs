@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 // use kovi::PluginBuilder as plugin;
 use brigadier::{azalea_brigadier::prelude::*, inventory, register::{AppCtx, Register}};
+use kovi::log::info;
 
 #[kovi::plugin]
 async fn main() {
@@ -18,6 +19,7 @@ async fn main() {
 fn ping(ctx: &CommandContext<AppCtx>) -> i32 {
     let event = Arc::clone(&ctx.source.event);
 
+    info!("[Ping] pong! for {}", event.user_id);
     event.reply("pong!");
 
     0
