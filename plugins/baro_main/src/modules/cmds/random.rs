@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use azalea_brigadier::prelude::*;
-use kovi::{tokio, Message};
+use kovi::{event::RepliableEvent, tokio, Message};
 use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize};
 
@@ -17,12 +17,12 @@ struct RandomCatResponse {
     url: String,
 }
 
-pub fn random(disp: &mut CommandDispatcher<AppCtx>) {
+pub fn random<T: RepliableEvent + Send + Sync>(disp: &mut CommandDispatcher<AppCtx<T>>) {
     disp.register(
         literal("random")
         .then(
             literal("fox")
-                .executes(|ctx: &CommandContext<AppCtx>| {
+                .executes(|ctx: &CommandContext<AppCtx<T>>| {
                         let event = Arc::clone(&ctx.source.event);
 
                         tokio::spawn(async move {
@@ -43,7 +43,7 @@ pub fn random(disp: &mut CommandDispatcher<AppCtx>) {
         )
         .then(
             literal("cat")
-                .executes(|ctx: &CommandContext<AppCtx>| {
+                .executes(|ctx: &CommandContext<AppCtx<T>>| {
                     let event = Arc::clone(&ctx.source.event);
 
                     tokio::spawn(async move {

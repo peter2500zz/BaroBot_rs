@@ -1,26 +1,43 @@
 mod room_info;
 
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::sync::Arc;
+use std::collections::{
+    HashMap,
+    HashSet,
+};
+
+use kovi::tokio;
+use kovi::tokio::sync::Mutex;
 use kovi::{
     log::info, Message, PluginBuilder as plugin
 };
 
-use crate::{config::LiveConfig, GlobalState};
+use brigadier::{azalea_brigadier::prelude::*, inventory, register::{AppCtx, Register}};
+use config::load_config;
+use serde::Deserialize;
 
-// use std::sync::Arc;
-
-// use kovi::{tokio, Message};
-
-// use crate::AppCtx;
+use crate::room_info::get_live_status;
 
 
-pub struct LiveReminder {
-    pub reminder: HashMap<i64, HashSet<i64>>,
-    pub room_ids: HashSet<i64>
+#[derive(Deserialize, Default, Clone, Debug)]
+struct Config {
+    live_reminder: LiveConfig,
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+struct LiveConfig {
+    cron: String,
+    reminder: HashMap<i64, HashSet<i64>>
+}
+
+
+struct LiveReminder {
+    reminder: HashMap<i64, HashSet<i64>>,
+    room_ids: HashSet<i64>
 }
 
 impl LiveReminder {
-    pub fn new(live_config: LiveConfig) -> Self {
+    fn new(live_config: LiveConfig) -> Self {
         let mut rooms = HashSet::<i64>::new();
 
         for (_, room_ids) in &live_config.reminder {
@@ -36,16 +53,37 @@ impl LiveReminder {
     }
 }
 
-pub fn live_reminder(state: Arc<GlobalState>) {
-    if let Some(config) = state.config.live.clone() {
-        plugin::cron(&config.cron.clone(), {
+#[kovi::plugin]
+async fn main() {
+    inventory::submit! {
+        Register::new(|disp: &mut CommandDispatcher<AppCtx>| {
+            disp.register(
+                literal("livequery")
+                .then(
+                    argument("room_id", integer())
+                        .executes(live_query)
+                )
+            );
+        })
+    }
+
+    let live_state: Arc<Mutex<HashMap::<String, i32>>> =  Arc::new(Mutex::new(HashMap::new()));
+    let bot = plugin::get_runtime_bot();
+
+    if let Some(config) = load_config::<Config>() {
+        info!("[Live reminder] initializing rooms");
+
+        let live_reminder = Arc::new(LiveReminder::new(config.live_reminder.clone()));
+
+        plugin::cron(&config.live_reminder.cron.clone(), {
             move || {
-                let state = Arc::clone(&state);
-                let live_reminder = Arc::new(LiveReminder::new(config.clone()));
+                let live_reminder = Arc::clone(&live_reminder);
+                let live_state = Arc::clone(&live_state);
+                let bot = Arc::clone(&bot);
 
                 async move {
                     if let Ok(response) = live_reminder.live_status().await {
-                        let mut live_state = state.live_state.lock().await;
+                        let mut live_state = live_state.lock().await;
 
                         for (room_id, room) in response.data.by_room_ids {
                             let last_status = match live_state.get(&room_id).cloned() {
@@ -70,7 +108,7 @@ pub fn live_reminder(state: Arc<GlobalState>) {
                                     for (group_id, room_ids) in &live_reminder.reminder {
                                         let room_id = room_id.parse::<i64>().unwrap_or_default();
                                         if room_ids.contains(&room_id) {
-                                            state.bot.send_group_msg(*group_id, format!("{} 下播了", room.uname));
+                                            bot.send_group_msg(*group_id, format!("{} 下播了", room.uname));
                                         }
                                     }
                                 },
@@ -89,7 +127,7 @@ pub fn live_reminder(state: Arc<GlobalState>) {
                                     for (group_id, room_ids) in &live_reminder.reminder {
                                         let room_id = room_id.parse::<i64>().unwrap_or_default();
                                         if room_ids.contains(&room_id) {
-                                            state.bot.send_group_msg(*group_id, msg.clone());
+                                            bot.send_group_msg(*group_id, msg.clone());
                                         }
                                     }
                                 },
@@ -105,6 +143,42 @@ pub fn live_reminder(state: Arc<GlobalState>) {
                 }
             }
         }).unwrap();
+    } else {
+        info!("[Live reminder] find no config, ignore");
     }
+}
+
+fn live_query(ctx: &CommandContext<AppCtx>) -> i32 {
+    let event = Arc::clone(&ctx.source.event);
+    let room_id = get_integer(ctx, "room_id").unwrap_or_default();
+    
+    tokio::spawn(async move {
+        match get_live_status(&HashSet::from([room_id as i64])).await {
+            Ok(response) =>  {
+                for (room_id, room) in response.data.by_room_ids {
+                    let mut msg = Message::new();
+                    info!("[Live reminder] query {}", room_id);
+
+                    let live_status = match room.live_status {
+                        0 => "已下播",
+                        1 => "正在直播",
+                        2 => "轮播中",
+                        _ => unreachable!()
+                    };
+
+                    msg.push_text(format!("{} {}\n", room.uname, live_status));
+                    msg.push_text(format!("{}\n", room.area_name));
+                    msg.push_image(&room.cover);
+                    msg.push_text(format!("{}\n", room.title));
+                    msg.push_text(room.live_url);
+
+                    event.reply(msg);
+                }
+            },
+            Err(e) => event.reply(format!("can not get live status: {e}")),
+        }
+    });
+
+    0
 }
 

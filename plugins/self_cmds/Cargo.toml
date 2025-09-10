@@ -1,0 +1,9 @@
+[package]
+name = "self_cmds"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+kovi.workspace = true
+brigadier = { path = "../brigadier" }
+humantime = "2.2.0"
