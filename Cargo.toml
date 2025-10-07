@@ -1,6 +1,6 @@
 [package]
 name = "baro_rs"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 
 [dependencies]
@@ -13,6 +13,7 @@ kovi-plugin-cmd = "0.3.0"
 limit_shutup = { version = "0.1.0", path = "plugins/limit_shutup" }
 live_reminder = { version = "0.1.0", path = "plugins/live_reminder" }
 ping = { version = "0.1.0", path = "plugins/ping" }
+randomly_ai = { version = "0.1.0", path = "plugins/randomly_ai" }
 repeat = { version = "0.1.0", path = "plugins/repeat" }
 self_cmds = { version = "0.1.0", path = "plugins/self_cmds" }
 
@@ -22,7 +23,7 @@ members = [
     "plugins/brigadier", 
     "plugins/config", "plugins/limit_shutup", 
     "plugins/live_reminder", 
-    "plugins/ping", "plugins/repeat", 
+    "plugins/ping", "plugins/randomly_ai", "plugins/repeat", 
     "plugins/self_cmds" 
 ]
 

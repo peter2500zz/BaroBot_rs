@@ -16,5 +16,6 @@ fn main() {
 
         auto_shutup,  // 定时禁言
         limit_shutup,  // 字数禁言
+        randomly_ai,
     ).run();
 }
